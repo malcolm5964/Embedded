@@ -27,14 +27,6 @@ const uint WHEEL_EN_RIGHT_VCC = 6;
 uint slice_num_right;
 uint slice_num_left;
 
-int my_abs(int value) {
-    if (value < 0) {
-        return -value;
-    }
-    //printf("Compare: %i", value);
-    return value;
-}
-
 
 void leftForward() {
     gpio_set_pulls(N1, true, false);
