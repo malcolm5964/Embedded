@@ -22,27 +22,28 @@ const uint BTN_PIN_IR = 26;
 
 const uint WHEEL_EN_LEFT_OUT = 16;
 const uint WHEEL_EN_LEFT_VCC = 7;
-const uint WHEEL_EN_RIGHT_OUT = 24;
-const uint WHEEL_EN_RIGHT_VCC = 6;
+const uint WHEEL_EN_RIGHT_OUT = 0;
+const uint WHEEL_EN_RIGHT_VCC = 1;
 
 uint slice_num_right;
 uint slice_num_left;
 
 
 void Forward()
-{
-    gpio_set_pulls(N3, false, true);
-    gpio_set_pulls(N4, true, false);
-    gpio_set_pulls(N1, false, true);
-    gpio_set_pulls(N2, true, false);
+{   
+    gpio_put(N1, 1);
+    gpio_put(N2, 0);
+    gpio_put(N3, 1);
+    gpio_put(N4, 0);
 }
 
 void Back()
 {
-    gpio_set_pulls(N3, true, false);
-    gpio_set_pulls(N4, false, true);
-    gpio_set_pulls(N1, true, false);
-    gpio_set_pulls(N2, false, true);
+    gpio_put(N1, 0);
+    gpio_put(N2, 1);    
+    gpio_put(N3, 0);
+    gpio_put(N4, 1);
+
 }
 
 void moving_task(__unused void *params)
