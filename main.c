@@ -3,128 +3,47 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "message_buffer.h"
+#include <math.h>
 
+#include "hardware/i2c.h"
 #include "hardware/pwm.h"
 #include "hardware/gpio.h"
 #include "hardware/adc.h"
 
-#define mbaTASK_MESSAGE_BUFFER_SIZE (60)
+#include "driver/motor/motor.h"
+#include "driver/magnometer/magnometer.h"
 
+
+#define mbaTASK_MESSAGE_BUFFER_SIZE (60)
 static MessageBufferHandle_t rawADCvalue1;
 static MessageBufferHandle_t rawADCvalue2;
 
-const uint PWM_LEFT = 10;
-const uint N1 = 11;
-const uint N2 = 12;
-
-const uint PWM_RIGHT = 15;
-const uint N3 = 14;
-const uint N4 = 13;
-
+//IR Sensor
 const uint BTN_PIN_IR = 26;
 const uint BTN_PIN_IR2 = 27;
 const uint LEFT_IR_SENSOR_VCC = 22;
 
+//Wheel IR Sensor
 const uint WHEEL_EN_LEFT_OUT = 16;
 const uint WHEEL_EN_LEFT_VCC = 7;
 const uint WHEEL_EN_RIGHT_OUT = 0;
 const uint WHEEL_EN_RIGHT_VCC = 1;
 
-uint slice_num_right;
-uint slice_num_left;
-
-void Forward()
-{   
-    gpio_put(N1, 1);
-    gpio_put(N2, 0);
-    gpio_put(N3, 1);
-    gpio_put(N4, 0);
-}
-
-void Back()
-{
-    gpio_put(N1, 0);
-    gpio_put(N2, 1);    
-    gpio_put(N3, 0);
-    gpio_put(N4, 1);
-
-}
-
 void moving_task(__unused void *params)
 {
-    uint32_t leftIrADC;
-    uint32_t rightIrADC;
-    size_t xReceivedBytes, xReceivedBytes2;
-
-    // Init Right Motor
-    gpio_set_function(PWM_RIGHT, GPIO_FUNC_PWM);
-    slice_num_right = pwm_gpio_to_slice_num(PWM_RIGHT);
-    pwm_set_clkdiv(slice_num_right, 100);
-    pwm_set_wrap(slice_num_right, 62500);
-    pwm_set_enabled(slice_num_right, true);
-    gpio_set_dir(N3, GPIO_OUT);
-    gpio_set_dir(N4, GPIO_OUT);
-
-    // Left Motor
-    gpio_set_function(PWM_LEFT, GPIO_FUNC_PWM);
-    slice_num_left = pwm_gpio_to_slice_num(PWM_LEFT);
-    pwm_set_clkdiv(slice_num_left, 100);
-    pwm_set_wrap(slice_num_left, 62500);
-    pwm_set_enabled(slice_num_left, true);
-    gpio_set_dir(N1, GPIO_OUT);
-    gpio_set_dir(N2, GPIO_OUT);
+    vTaskDelay(1000);
+    init_right_motor();
+    init_left_motor();
+    magnometer_init();
 
     while (true)
-    {
-        vTaskDelay(100);
-        Forward();
-        pwm_set_chan_level(slice_num_left, PWM_CHAN_A, 62500 / 5);
-        pwm_set_chan_level(slice_num_right, PWM_CHAN_B, 62500 / 5);
+    {   
+        turn_right();
+        stop();
 
-        xReceivedBytes = xMessageBufferReceive(
-            rawADCvalue1,       /* The message buffer to receive from. */
-            (void *)&leftIrADC, /* Location to store received data. */
-            sizeof(leftIrADC),  /* Maximum number of bytes to receive. */
-            portMAX_DELAY);
-
-        xReceivedBytes2 = xMessageBufferReceive(
-            rawADCvalue2,        /* The message buffer to receive from. */
-            (void *)&rightIrADC, /* Location to store received data. */
-            sizeof(rightIrADC),  /* Maximum number of bytes to receive. */
-            portMAX_DELAY);
-
-        if (xReceivedBytes > 0 && xReceivedBytes2 > 0)
-        {
-            // printf("Left ADC Result: %d\n", leftIrADC);
-            // printf("Right ADC Result: %d\n", rightIrADC);
-            bool leftThreshold = (leftIrADC >= 600);
-            bool rightThreshold = (rightIrADC >= 600);
-
-            if (leftThreshold == 1 && rightThreshold == 1)
-            {
-                printf("Forward");
-            }
-            else if (leftThreshold == 0 && rightThreshold == 1)
-            {
-                printf("Turn left");
-            }
-            else if (leftThreshold == 1 && rightThreshold == 0)
-            {
-                printf("Turn right");
-            }
-        }
-
-        // vTaskDelay(2000);
-        // pwm_set_chan_level(slice_num_left, PWM_CHAN_A, 0);
-        // pwm_set_chan_level(slice_num_right, PWM_CHAN_B, 0);
-        //
-        // vTaskDelay(2000);
-        // Back();
-        // pwm_set_chan_level(slice_num_left, PWM_CHAN_A, 62500/2);
-        // pwm_set_chan_level(slice_num_right, PWM_CHAN_B, 62500/2);
-
-        // vTaskDelay(100);
+        vTaskDelay(10000);
     }
+    
 }
 
 void measureSpeed_task(__unused void *params)

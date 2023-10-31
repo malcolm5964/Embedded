@@ -1,4 +1,7 @@
 add_executable(main_sys main.c
+driver/motor/motor.c
+driver/magnometer/magnometer.c
+
 ${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c
 )
 
@@ -19,6 +22,7 @@ target_include_directories(main_sys PRIVATE
 target_link_libraries(main_sys
     hardware_adc
     hardware_pwm
+    hardware_i2c
     pico_cyw43_arch_lwip_sys_freertos
     pico_stdlib
     pico_lwip_iperf
