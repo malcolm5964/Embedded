@@ -12,6 +12,7 @@
 
 #include "driver/motor/motor.h"
 #include "driver/magnometer/magnometer.h"
+#include "driver/wheelEncoder/wheelEncoder.h"
 
 
 #define mbaTASK_MESSAGE_BUFFER_SIZE (60)
@@ -23,72 +24,32 @@ const uint BTN_PIN_IR = 26;
 const uint BTN_PIN_IR2 = 27;
 const uint LEFT_IR_SENSOR_VCC = 22;
 
-//Wheel IR Sensor
-const uint WHEEL_EN_LEFT_OUT = 16;
-const uint WHEEL_EN_LEFT_VCC = 7;
-const uint WHEEL_EN_RIGHT_OUT = 0;
-const uint WHEEL_EN_RIGHT_VCC = 1;
-
 void moving_task(__unused void *params)
 {
     vTaskDelay(1000);
     init_right_motor();
     init_left_motor();
-    magnometer_init();
 
     while (true)
-    {   
+    {   //Test Forward
+        move_forward();
+        vTaskDelay(5000);
+        //Test Right
         turn_right();
+        //Test Backwards
+        move_backward();
+        vTaskDelay(5000);
         stop();
-
-        vTaskDelay(10000);
     }
     
 }
 
 void measureSpeed_task(__unused void *params)
 {
-    absolute_time_t previousTime = get_absolute_time();
-    uint8_t edgeCounter = 0;
-    uint8_t detect_change;
-
-    // Init Left IR Sensor
-    // adc_gpio_init(WHEEL_EN_LEFT_OUT);
-    gpio_init(WHEEL_EN_LEFT_OUT);
-    gpio_set_dir(WHEEL_EN_LEFT_OUT, GPIO_IN);
-    gpio_init(WHEEL_EN_LEFT_VCC);
-    gpio_set_dir(WHEEL_EN_LEFT_VCC, GPIO_OUT);
-    gpio_put(WHEEL_EN_LEFT_VCC, 1); // Set to HIGH for VCC
-
-    // Init Right IR Sensor
-    gpio_init(WHEEL_EN_RIGHT_OUT);
-    gpio_set_dir(WHEEL_EN_RIGHT_OUT, GPIO_IN);
-    gpio_init(WHEEL_EN_RIGHT_VCC);
-    gpio_set_dir(WHEEL_EN_RIGHT_VCC, GPIO_OUT);
-    gpio_put(WHEEL_EN_RIGHT_VCC, 1); // Set to HIGH for VCC
-
-    while (true)
-    {
-
-        if (gpio_get(WHEEL_EN_LEFT_OUT) == 1)
-        {
-            detect_change = 1;
-        }
-        if ((gpio_get(WHEEL_EN_LEFT_OUT) == 0) && (detect_change == 1))
-        {
-            detect_change = 0;
-            edgeCounter++;
-            if (edgeCounter >= 20)
-            {
-                edgeCounter = 0;
-                absolute_time_t current_time = get_absolute_time();
-                uint64_t revolutionTime = absolute_time_diff_us(previousTime, current_time);
-                uint64_t speed = 11000000 / revolutionTime;
-                printf("Wheel Speed: %lldcm/s\n", speed);
-                previousTime = current_time;
-            }
-        }
-    }
+    vTaskDelay(4000);
+    initWheelEncoderLeft();
+    initWheelEncoderRight();
+    measureSpeedLeft();
 }
 
 void ir_sensor()

@@ -1,6 +1,7 @@
 add_executable(main_sys main.c
 driver/motor/motor.c
 driver/magnometer/magnometer.c
+driver/wheelEncoder/wheelEncoder.c
 
 ${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c
 )

@@ -13,7 +13,7 @@ const uint N4 = 13;
 uint slice_num_right = 0;
 uint slice_num_left = 0;
 
-void direction_forward()
+void set_direction_forward()
 {   
     gpio_put(N1, 0);
     gpio_put(N2, 1);
@@ -21,7 +21,7 @@ void direction_forward()
     gpio_put(N4, 0);
 }
 
-void direction_back()
+void set_direction_back()
 {
     gpio_put(N1, 1);
     gpio_put(N2, 0);    
@@ -29,7 +29,7 @@ void direction_back()
     gpio_put(N4, 1);
 }
 
-void direction_right()
+void set_direction_right()
 {
     gpio_put(N1, 0);
     gpio_put(N2, 1);    
@@ -37,7 +37,7 @@ void direction_right()
     gpio_put(N4, 0);
 }
 
-void direction_left()
+void set_direction_left()
 {
     gpio_put(N1, 0);
     gpio_put(N2, 0);    
@@ -51,6 +51,14 @@ void stop()
     gpio_put(N2, 0);    
     gpio_put(N3, 0);
     gpio_put(N4, 0);
+}
+
+void set_left_speed(int level){
+    pwm_set_chan_level(slice_num_left, PWM_CHAN_A, 62500 / level);
+}
+
+void set_right_speed(int level){
+    pwm_set_chan_level(slice_num_right, PWM_CHAN_B, 62500 / level);
 }
 
 
@@ -79,17 +87,27 @@ void init_left_motor(){
     gpio_set_dir(N2, GPIO_OUT);
 }
 
-void set_left_speed(int level){
-    pwm_set_chan_level(slice_num_left, PWM_CHAN_A, 62500 / level);
+void move_forward(){
+    set_direction_forward();
+    set_left_speed(3);
+    set_right_speed(3);
 }
 
-void set_right_speed(int level){
-    pwm_set_chan_level(slice_num_right, PWM_CHAN_B, 62500 / level);
+void move_backward(){
+    set_direction_back();
+    set_left_speed(3);
+    set_left_speed(3);
 }
 
 void turn_right(){
-    direction_right();
+    set_direction_right();
     set_left_speed(3);
+    vTaskDelay(950);
+}
+
+void turn_left(){
+    set_direction_left();
+    set_right_speed(3);
     vTaskDelay(950);
 }
 
