@@ -13,16 +13,11 @@
 #include "driver/motor/motor.h"
 #include "driver/magnometer/magnometer.h"
 #include "driver/wheelEncoder/wheelEncoder.h"
-
+#include "driver/irline/irline.h"
 
 #define mbaTASK_MESSAGE_BUFFER_SIZE (60)
-static MessageBufferHandle_t rawADCvalue1;
-static MessageBufferHandle_t rawADCvalue2;
-
-//IR Sensor
-const uint BTN_PIN_IR = 26;
-const uint BTN_PIN_IR2 = 27;
-const uint LEFT_IR_SENSOR_VCC = 22;
+static MessageBufferHandle_t rawADCvalue_left;
+static MessageBufferHandle_t rawADCvalue_right;
 
 void moving_task(__unused void *params)
 {
@@ -31,17 +26,16 @@ void moving_task(__unused void *params)
     init_left_motor();
 
     while (true)
-    {   //Test Forward
+    { // Test Forward
         move_forward();
         vTaskDelay(5000);
-        //Test Right
+        // Test Right
         turn_right();
-        //Test Backwards
+        // Test Backwards
         move_backward();
         vTaskDelay(5000);
         stop();
     }
-    
 }
 
 void measureSpeed_task(__unused void *params)
@@ -54,28 +48,18 @@ void measureSpeed_task(__unused void *params)
 
 void ir_sensor()
 {
-    gpio_init(LEFT_IR_SENSOR_VCC);
-    gpio_set_dir(LEFT_IR_SENSOR_VCC, GPIO_OUT);
-    gpio_put(LEFT_IR_SENSOR_VCC, 1);
+    init_ir();
     while (true)
     {
         vTaskDelay(100);
 
-        adc_select_input(0);
-        uint32_t left_result = adc_read();
-        adc_select_input(1);
-        uint32_t right_result = adc_read();
+        bool left_color_detected = left_ir();
+        bool right_color_detected = right_ir();
 
-        xMessageBufferSend(
-            rawADCvalue1,         /* The message buffer to write to. */
-            (void *)&left_result, /* The source of the data to send. */
-            sizeof(left_result),  /* The length of the data to send. */
-            0);
-        xMessageBufferSend(
-            rawADCvalue2,          /* The message buffer to write to. */
-            (void *)&right_result, /* The source of the data to send. */
-            sizeof(right_result),  /* The length of the data to send. */
-            0);
+        if (left_color_detected && right_color_detected)
+        {
+            printf("BLACK\n");
+        }
     }
 }
 
@@ -90,8 +74,8 @@ void vLaunch(void)
     TaskHandle_t irSensor;
     xTaskCreate(ir_sensor, "IRSensor", configMINIMAL_STACK_SIZE, NULL, 3, &irSensor);
 
-    rawADCvalue1 = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
-    rawADCvalue2 = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
+    rawADCvalue_left = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
+    rawADCvalue_right = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
 
     vTaskStartScheduler();
 }
@@ -100,20 +84,6 @@ int main(void)
 {
     stdio_init_all();
     stdio_usb_init();
-
-    // Init IR Sensor
-    adc_init();
-    adc_set_temp_sensor_enabled(true);
-
-    gpio_set_dir(BTN_PIN_IR, GPIO_IN);
-    gpio_set_function(BTN_PIN_IR, GPIO_FUNC_SIO);
-    gpio_disable_pulls(BTN_PIN_IR);
-    gpio_set_input_enabled(BTN_PIN_IR, false);
-
-    gpio_set_dir(BTN_PIN_IR2, GPIO_IN);
-    gpio_set_function(BTN_PIN_IR2, GPIO_FUNC_SIO);
-    gpio_disable_pulls(BTN_PIN_IR2);
-    gpio_set_input_enabled(BTN_PIN_IR2, false);
 
     vLaunch();
 
