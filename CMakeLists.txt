@@ -3,6 +3,7 @@ driver/motor/motor.c
 driver/magnometer/magnometer.c
 driver/wheelEncoder/wheelEncoder.c
 driver/irline/irline.c
+driver/ultrasonic/ultrasonic.c
 
 
 ${PICO_LWIP_CONTRIB_PATH}/apps/ping/ping.c

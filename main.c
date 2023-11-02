@@ -9,15 +9,19 @@
 #include "hardware/pwm.h"
 #include "hardware/gpio.h"
 #include "hardware/adc.h"
+#include "hardware/timer.h"
 
 #include "driver/motor/motor.h"
 #include "driver/magnometer/magnometer.h"
 #include "driver/wheelEncoder/wheelEncoder.h"
 #include "driver/irline/irline.h"
+#include "driver/ultrasonic/ultrasonic.h"
 
 #define mbaTASK_MESSAGE_BUFFER_SIZE (60)
 static MessageBufferHandle_t rawADCvalue_left;
 static MessageBufferHandle_t rawADCvalue_right;
+// static MessageBufferHandle_t sendDataUltrasonicSensorCMB;
+
 
 void moving_task(__unused void *params)
 {
@@ -35,6 +39,7 @@ void moving_task(__unused void *params)
         move_backward();
         vTaskDelay(5000);
         stop();
+
     }
 }
 
@@ -63,6 +68,19 @@ void ir_sensor()
     }
 }
 
+
+void getCM_task(__unused void *params) {
+
+    setupUltrasonicPins(trigPin, echoPin);
+    while(true){
+        printf("\n %lld cm", getCm(trigPin, echoPin));
+        sleep_ms(5000); 
+    }
+   
+
+}
+
+
 void vLaunch(void)
 {
     TaskHandle_t moveCar;
@@ -74,8 +92,12 @@ void vLaunch(void)
     TaskHandle_t irSensor;
     xTaskCreate(ir_sensor, "IRSensor", configMINIMAL_STACK_SIZE, NULL, 3, &irSensor);
 
+    TaskHandle_t getCM;
+    xTaskCreate(getCM_task, "getCM", configMINIMAL_STACK_SIZE, NULL, 4, &getCM);
+
     rawADCvalue_left = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
     rawADCvalue_right = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
+    // sendDataUltrasonicSensorCMB = xMessageBufferCreate(mbaTASK_MESSAGE_BUFFER_SIZE);
 
     vTaskStartScheduler();
 }
